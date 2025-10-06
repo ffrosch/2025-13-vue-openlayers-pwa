@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import PWABadge from '@/components/PWABadge.vue'
+import SettingsButton from '@/components/SettingsButton.vue'
+import SettingsPanel from '@/components/SettingsPanel.vue'
+
+const showSettings = ref(false)
 </script>
 
 <template>
@@ -40,6 +45,8 @@ import PWABadge from '@/components/PWABadge.vue'
     </section>
 
     <PWABadge />
+    <SettingsButton @open-settings="showSettings = true" />
+    <SettingsPanel v-model:is-open="showSettings" />
   </div>
 </template>
 
