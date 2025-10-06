@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="mapGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3730a3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Map pin shape -->
+  <path
+    d="M 50 15
+       C 35 15, 25 25, 25 40
+       C 25 55, 50 85, 50 85
+       C 50 85, 75 55, 75 40
+       C 75 25, 65 15, 50 15 Z"
+    fill="url(#mapGradient)"
+    stroke="#1e1b4b"
+    stroke-width="2"
+  />
+
+  <!-- Inner circle/dot -->
+  <circle
+    cx="50"
+    cy="40"
+    r="10"
+    fill="white"
+    stroke="#1e1b4b"
+    stroke-width="1.5"
+  />
+</svg>
