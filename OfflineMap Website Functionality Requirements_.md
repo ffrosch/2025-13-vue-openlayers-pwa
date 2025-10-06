@@ -1,0 +1,8 @@
+# Project Requirements Document: The OfflineMap Website
+
+The following table outlines the detailed functional requirements of The OfflineMap Website.
+
+| Requirement ID | Description                   | User Story                                                                    | Expected Behavior/Outcome                                                                                                                                                                                                                                             |
+| :------------- | :---------------------------- | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR001          | Add Website as PWA            | As a user, I want to be able to add the Website as a PWA on my mobile device. | The system should provide the ability to add the Website as a PWA on mobile devices.                                                                                                                                                                                  |
+| FR002          | Configure storage persistence | As a user, I want to be sure that my local data won't be deleted.             | The website should have a settings section, where type of storage can be toggled between persistent and non-persistent. A warning symbol should be displayed conditionally in the settings button and in front of the toggle switch if the storage is not persistent. |
