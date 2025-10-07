@@ -24,15 +24,15 @@ const addReport = async () => {
   <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-lg shadow-lg p-8">
       <!-- Header with Add Button -->
-      <div class="flex justify-between items-center mb-6">
+      <div class="grid grid-flow-row gap-3 mb-6">
         <h2 class="text-2xl font-semibold text-gray-700">
           Reports ({{ data?.length }})
         </h2>
         <Button @click="addReportViaDbTransactions">
-          Add New Report via DB Transactions
+          Add (DB)
         </Button>
         <Button @click="addReport">
-          Add New Report
+          Add (Store)
         </Button>
       </div>
 
