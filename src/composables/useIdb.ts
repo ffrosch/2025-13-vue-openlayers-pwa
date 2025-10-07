@@ -58,7 +58,7 @@ import type {
   StoreValue,
   DBSchema,
 } from "idb";
-import { ref, onUnmounted, type Ref } from "vue";
+import { ref, reactive, watch, onUnmounted, type Ref } from "vue";
 
 interface StoreOptions {
   /** Whether to automatically fetch all data on initialization. Defaults to `true`. */
@@ -90,13 +90,13 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
   // BroadcastChannel for cross-tab communication
   const channel = new BroadcastChannel('idb-store-updates');
 
-  // Internal event dispatcher for same-tab updates
-  type UpdateListener = (storeName: string) => void;
-  const updateListeners = new Set<UpdateListener>();
+  // Reactive map for same-tab updates: storeName -> version counter
+  const storeVersions = reactive(new Map<string, number>());
 
   function notifyUpdate(storeName: string) {
-    // Notify same-tab listeners
-    updateListeners.forEach(listener => listener(storeName));
+    // Increment version to trigger reactivity (same-tab)
+    const currentVersion = storeVersions.get(storeName) ?? 0;
+    storeVersions.set(storeName, currentVersion + 1);
 
     // Notify other tabs via BroadcastChannel
     channel.postMessage({
@@ -267,32 +267,28 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
       }
     }
 
-    // Refresh handler for both same-tab and cross-tab updates
-    const refreshIfNeeded = () => {
-      if (data.value !== null) {
-        fetchAll();
+    // Watch for same-tab updates (reactive version changes)
+    watch(
+      () => storeVersions.get(storeName as string),
+      () => {
+        if (data.value !== null) {
+          fetchAll();
+        }
       }
-    };
-
-    // Listen for same-tab updates (from useIDBDB)
-    const sameTabListener: UpdateListener = (updatedStoreName) => {
-      if (updatedStoreName === storeName) {
-        refreshIfNeeded();
-      }
-    };
-    updateListeners.add(sameTabListener);
+    );
 
     // Listen for cross-tab updates (from BroadcastChannel)
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'store-updated' && event.data.storeName === storeName) {
-        refreshIfNeeded();
+        if (data.value !== null) {
+          fetchAll();
+        }
       }
     };
     channel.addEventListener('message', handleMessage);
 
-    // Cleanup listeners on unmount
+    // Cleanup on unmount
     onUnmounted(() => {
-      updateListeners.delete(sameTabListener);
       channel.removeEventListener('message', handleMessage);
     });
 
