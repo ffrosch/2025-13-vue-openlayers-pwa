@@ -107,10 +107,10 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
 
   function useIDBDB() {
     type StoresMap<TransactionMode extends IDBTransactionMode> = {
-      [K in StoreNames<DBTypes>]: IDBPObjectStore<
+      [K in StoreNames<DBTypes> as K extends string | number | symbol ? K : never]: IDBPObjectStore<
         DBTypes,
         StoreNames<DBTypes>[],
-        K,
+        K extends StoreNames<DBTypes> ? K : never,
         TransactionMode
       >;
     };

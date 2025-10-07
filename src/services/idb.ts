@@ -30,6 +30,7 @@ const dbVersion = 1;
 
 export const getDb = async () => {
   const db = openDB<MyDB>(dbName, dbVersion, {
+    // @ts-expect-error - unused parameters required by idb upgrade callback signature
     upgrade(db, oldVersion, newVersion, transaction, event) {
       if (newVersion === 1) {
         const reports = db.createObjectStore("reports", {
@@ -41,8 +42,10 @@ export const getDb = async () => {
         // Create an index on the 'date' property of the objects.
         reports.createIndex("by-date", "date");
 
+        // @ts-expect-error - unused variable for future use
         const areas = db.createObjectStore("areas");
 
+        // @ts-expect-error - unused variable for future use
         const tiles = db.createObjectStore("tiles");
       }
     },
@@ -52,10 +55,12 @@ export const getDb = async () => {
     db.onerror = (event) => {
       // Generic error handler for all errors targeted at this database's
       // requests!
+      // @ts-expect-error - event.target.error exists on IDBRequest
       console.error(`Database error: ${event.target?.error?.message}`);
     };
 
     db.onclose = (event) => {
+      // @ts-expect-error - event.target.error exists on IDBRequest
       console.log(`DB closed unexpectedly: ${event.target?.error?.message}`);
     };
   });
