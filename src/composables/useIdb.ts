@@ -257,7 +257,12 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
 
       try {
         await Promise.all(actions);
-        await _updateData();
+
+        // Notify all tabs about updates (including this one)
+        if (mode === 'readwrite' || mode === 'versionchange') {
+          await _updateData();
+          notifyUpdate(storeName as string);
+        }
       } catch (error) {
         console.error(
           `Transaction failed for store "${storeName as string}":`,
