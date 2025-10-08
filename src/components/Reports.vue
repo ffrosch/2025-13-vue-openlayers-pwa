@@ -11,21 +11,21 @@ const addReportViaDbTransactions = async () => {
   const results = await dbTransactions('readwrite', stores => {
     return [stores.reports.add({ species_id: 1, observation_type_id: 1, date: new Date() })];
   });
-  console.log(results)
+  console.log("Added report Ids via db:", results)
 };
 
 const addReport = async () => {
   const results = await transactions('readwrite', store => {
     return [store.add({ species_id: 1, observation_type_id: 1, date: new Date() })];
   });
-  console.log(results)
+  console.log("Added report Ids via store:", results)
 };
 
 const readReports = async () => {
   const results = await transactions('readonly', store => {
     return [store.getAll()]
   })
-  console.log(results)
+  console.log("All reports:", results)
 }
 readReports();
 </script>
