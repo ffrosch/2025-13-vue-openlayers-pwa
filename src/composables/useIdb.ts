@@ -88,7 +88,7 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
   getDb: Promise<IDBPDatabase<DBTypes>>
 ) {
   // BroadcastChannel for cross-tab communication
-  const channel = new BroadcastChannel('idb-store-updates');
+  const channel = new BroadcastChannel("idb-store-updates");
 
   // Reactive map for same-tab updates: storeName -> version counter
   const storeVersions = reactive(new Map<string, number>());
@@ -100,14 +100,16 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
 
     // Notify other tabs via BroadcastChannel
     channel.postMessage({
-      type: 'store-updated',
-      storeName
+      type: "store-updated",
+      storeName,
     });
   }
 
   function useIDBDB() {
     type StoresMap<TransactionMode extends IDBTransactionMode> = {
-      [K in StoreNames<DBTypes> as K extends string | number | symbol ? K : never]: IDBPObjectStore<
+      [K in StoreNames<DBTypes> as K extends string | number | symbol
+        ? K
+        : never]: IDBPObjectStore<
         DBTypes,
         StoreNames<DBTypes>[],
         K extends StoreNames<DBTypes> ? K : never,
@@ -122,26 +124,23 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
       ) => Promise<T>[]
     ): Promise<T[]> {
       const db = await getDb;
-      const storeNames = Array.from(db.objectStoreNames) as StoreNames<DBTypes>[];
+      const storeNames = Array.from(
+        db.objectStoreNames
+      ) as StoreNames<DBTypes>[];
       const tx = db.transaction(storeNames, mode);
       const stores = Object.fromEntries(
         storeNames.map((name) => [name, tx.objectStore(name)])
       ) as StoresMap<TransactionMode>;
-      const actions = [...callback(stores), tx.done];
+      const actions = callback(stores);
 
-      try {
-        await Promise.all(actions);
-
-        // Notify all tabs about updates (including this one)
-        if (mode === 'readwrite' || mode === 'versionchange') {
-          for (const storeName of storeNames) {
-            notifyUpdate(storeName as string);
-          }
+      const results = await Promise.all(actions);
+      await tx.done;
+      if (mode === "readwrite" || mode === "versionchange") {
+        for (const storeName of storeNames) {
+          notifyUpdate(storeName as string);
         }
-      } catch (error) {
-        console.error(`Transaction failed:`, error);
-        throw error;
       }
+      return results;
     }
 
     return { transactions };
@@ -255,23 +254,14 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
     ): Promise<T[]> {
       const db = await getDb;
       const tx = db.transaction(storeName, mode);
-      const actions = [...callback(tx.store), tx.done];
+      const actions = callback(tx.store);
 
-      try {
-        await Promise.all(actions);
-
-        // Notify all tabs about updates (including this one)
-        if (mode === 'readwrite' || mode === 'versionchange') {
-          await _updateData();
-          notifyUpdate(storeName as string);
-        }
-      } catch (error) {
-        console.error(
-          `Transaction failed for store "${storeName as string}":`,
-          error
-        );
-        throw error;
+      const results = await Promise.all(actions);
+      await tx.done;
+      if (mode === "readwrite" || mode === "versionchange") {
+        notifyUpdate(storeName as string);
       }
+      return results;
     }
 
     // Watch for same-tab updates (reactive version changes)
@@ -286,17 +276,20 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
 
     // Listen for cross-tab updates (from BroadcastChannel)
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'store-updated' && event.data.storeName === storeName) {
+      if (
+        event.data.type === "store-updated" &&
+        event.data.storeName === storeName
+      ) {
         if (data.value !== null) {
           fetchAll();
         }
       }
     };
-    channel.addEventListener('message', handleMessage);
+    channel.addEventListener("message", handleMessage);
 
     // Cleanup on unmount
     onUnmounted(() => {
-      channel.removeEventListener('message', handleMessage);
+      channel.removeEventListener("message", handleMessage);
     });
 
     // Auto-fetch on initialization if requested
