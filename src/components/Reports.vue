@@ -8,16 +8,26 @@ const { transactions: dbTransactions } = useIDBDB();
 const { data, isLoading, transactions } = useIDBStore('reports', { fetchData: true });
 
 const addReportViaDbTransactions = async () => {
-  await dbTransactions('readwrite', stores => {
+  const results = await dbTransactions('readwrite', stores => {
     return [stores.reports.add({ species_id: 1, observation_type_id: 1, date: new Date() })];
   });
+  console.log(results)
 };
 
 const addReport = async () => {
-  await transactions('readwrite', store => {
+  const results = await transactions('readwrite', store => {
     return [store.add({ species_id: 1, observation_type_id: 1, date: new Date() })];
   });
+  console.log(results)
 };
+
+const readReports = async () => {
+  const results = await transactions('readonly', store => {
+    return [store.getAll()]
+  })
+  console.log(results)
+}
+readReports();
 </script>
 
 <template>
