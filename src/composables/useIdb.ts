@@ -115,10 +115,12 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
       >;
     };
 
-    async function transactions<TransactionMode extends IDBTransactionMode>(
+    async function transactions<TransactionMode extends IDBTransactionMode, T>(
       mode: TransactionMode,
-      callback: (stores: StoresMap<TransactionMode>) => Promise<any>[]
-    ): Promise<void> {
+      callback: (
+        stores: StoresMap<TransactionMode>
+      ) => Promise<T>[]
+    ): Promise<T[]> {
       const db = await getDb;
       const storeNames = Array.from(db.objectStoreNames) as StoreNames<DBTypes>[];
       const tx = db.transaction(storeNames, mode);
@@ -245,12 +247,12 @@ export function createUseIDBStore<DBTypes extends DBSchema>(
      * ]);
      * ```
      */
-    async function transactions<TransactionMode extends IDBTransactionMode>(
+    async function transactions<TransactionMode extends IDBTransactionMode, T>(
       mode: TransactionMode,
       callback: (
         store: IDBPObjectStore<DBTypes, [StoreName], StoreName, TransactionMode>
-      ) => Promise<StoreKey<DBTypes, StoreName>>[]
-    ): Promise<void> {
+      ) => Promise<T>[]
+    ): Promise<T[]> {
       const db = await getDb;
       const tx = db.transaction(storeName, mode);
       const actions = [...callback(tx.store), tx.done];
