@@ -61,26 +61,23 @@ export interface UseTileDownloaderReturn {
   /** Current download state */
   state: Ref<DownloadState>;
 
-  /** Current progress */
+  /**
+   * Current progress - contains all download metrics:
+   * - downloaded: number of tiles downloaded
+   * - failed: number of failed tiles
+   * - pending: number of tiles remaining
+   * - currentSpeed: download speed in bytes/sec
+   * - eta: estimated time remaining in seconds
+   * - estimatedBytes: estimated total size
+   * - percentComplete: progress as decimal (0-1)
+   */
   progress: Ref<LiveProgress | null>;
 
   /** Final statistics (available after completion) */
   stats: Ref<DownloadStats | null>;
 
-  /** Downloaded tiles count */
-  downloadedCount: Ref<number>;
-
-  /** Failed tiles count */
-  failedCount: Ref<number>;
-
-  /** Download progress percentage (0-100) */
+  /** Download progress percentage (0-100), derived from progress.percentComplete */
   progressPercent: Ref<number>;
-
-  /** Current download speed (bytes/sec) */
-  downloadSpeed: Ref<number>;
-
-  /** Estimated time remaining (seconds) */
-  eta: Ref<number>;
 
   /** Whether download is active */
   isDownloading: Ref<boolean>;
@@ -145,12 +142,8 @@ export function useTileDownloader(options: UseTileDownloaderOptions = {}): UseTi
   let downloadResult: TileDownloadResult;
   let progressInterval: number | null = null;
 
-  // Computed
-  const downloadedCount = computed(() => progress.value?.downloaded ?? 0);
-  const failedCount = computed(() => progress.value?.failed ?? 0);
+  // Computed - only properties that transform/derive from state/progress
   const progressPercent = computed(() => (progress.value?.percentComplete ?? 0) * 100);
-  const downloadSpeed = computed(() => progress.value?.currentSpeed ?? 0);
-  const eta = computed(() => progress.value?.eta ?? 0);
 
   const isDownloading = computed(() => state.value === 'downloading');
   const isPaused = computed(() => state.value === 'paused');
@@ -408,11 +401,7 @@ export function useTileDownloader(options: UseTileDownloaderOptions = {}): UseTi
     state,
     progress,
     stats,
-    downloadedCount,
-    failedCount,
     progressPercent,
-    downloadSpeed,
-    eta,
     isDownloading,
     isPaused,
     isComplete,

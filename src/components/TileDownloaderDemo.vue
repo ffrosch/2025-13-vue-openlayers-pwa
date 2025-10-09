@@ -61,14 +61,14 @@ const stateColor = computed(() => {
 });
 
 const formattedSpeed = computed(() => {
-  const speed = downloader.value.downloadSpeed;
+  const speed = downloader.value.progress?.currentSpeed ?? 0;
   if (speed < 1024) return `${speed.toFixed(0)} B/s`;
   if (speed < 1024 * 1024) return `${(speed / 1024).toFixed(1)} KB/s`;
   return `${(speed / 1024 / 1024).toFixed(2)} MB/s`;
 });
 
 const formattedETA = computed(() => {
-  const eta = downloader.value.eta;
+  const eta = downloader.value.progress?.eta ?? 0;
   if (eta < 60) return `${Math.floor(eta)}s`;
   const minutes = Math.floor(eta / 60);
   const seconds = Math.floor(eta % 60);
@@ -195,11 +195,11 @@ onMounted(() => {
           </div>
           <div class="flex items-center justify-between text-sm">
             <span>Downloaded</span>
-            <span class="font-mono">{{ downloader.downloadedCount }}</span>
+            <span class="font-mono">{{ downloader.progress?.downloaded ?? 0 }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <span>Failed</span>
-            <span class="font-mono text-red-600">{{ downloader.failedCount }}</span>
+            <span class="font-mono text-red-600">{{ downloader.progress?.failed ?? 0 }}</span>
           </div>
         </div>
 
