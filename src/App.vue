@@ -3,6 +3,7 @@ import PWABadge from '@/components/PWABadge.vue';
 import Map from '@/components/Map.vue';
 import PersistButton from '@/components/PersistButton.vue';
 import Reports from '@/components/Reports.vue';
+import TileDownloaderDemo from '@/components/TileDownloaderDemo.vue';
 </script>
 
 <template>
@@ -29,6 +30,11 @@ import Reports from '@/components/Reports.vue';
       </div>
 
       <Reports class="w-full"/>
+
+      <!-- Tile Downloader Demo -->
+      <div class="container mx-auto px-4">
+        <TileDownloaderDemo />
+      </div>
 
       <Map />
 

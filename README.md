@@ -4,6 +4,15 @@ Vue and Openlayers as Progressive Web App (PWA) with local tile storage for offl
 
 ## Technical documentation
 
+### Types
+
 The `idb` library uses types and especially type narrowing/type negation very well.
 This makes it possible for it to infer the specific keys, schemas, etc. for each store.
 For more context on how it works, see this great article on [type negation](https://catchts.com/type-negation#type_negation) or peek at the [source code](node_modules/idb/build/entry.d.ts).
+
+## Learning resources
+
+### PWA
+
+- [Learn PWA](https://web.dev/learn/pwa/)
+- [Vite PWA Plugin](https://vite-pwa-org.netlify.app/)
