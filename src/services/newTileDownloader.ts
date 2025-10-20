@@ -58,12 +58,10 @@ export function createTileRangeCollection(
     minZoom: targetArea.minZoom,
   });
 
-  const bboxInTargetCrs = transformExtent(targetArea.bbox, 'EPSG:4326', targetArea.crs);
-
   const tileRanges: TileRange[] = [];
   for (let zoom = targetArea.minZoom; zoom <= targetArea.maxZoom; zoom++) {
     const { minX, maxX, minY, maxY } = tileGrid.getTileRangeForExtentAndZ(
-      bboxInTargetCrs,
+      transformExtent(targetArea.bbox, "EPSG:4326", targetArea.crs),
       zoom
     );
     const count = (maxX - minX + 1) * (maxY - minY + 1);
@@ -116,19 +114,22 @@ export async function* downloadTiles(
   const pendingDownloads = new Set<Promise<Blob>>();
 
   function* generateTileURLs() {
-    let subdomainIndex = 0;
+    let currentSubdomainIndex = 0;
 
     for (let i = 0; i < tileRanges.length; i++) {
       const { minX, maxX, minY, maxY, zoom } = tileRanges[i] as TileRange;
       for (let x = minX; x <= maxX; x++) {
         for (let y = minY; y <= maxY; y++) {
-          subdomainIndex = (subdomainIndex + 1) % sourceSubdomains?.length;
+          currentSubdomainIndex =
+            (currentSubdomainIndex + 1) % sourceSubdomains?.length;
 
           let url = sourceUrl
             .replace("{x}", x.toString())
             .replace("{y}", y.toString())
+            // TMS has origin at bottom-left, need to invert
+            .replace("{-y}", (Math.pow(2, zoom) - 1 - y).toString())
             .replace("{z}", zoom.toString())
-            .replace("{s}", sourceSubdomains[subdomainIndex] ?? "");
+            .replace("{s}", sourceSubdomains[currentSubdomainIndex] ?? "");
 
           yield url;
         }
