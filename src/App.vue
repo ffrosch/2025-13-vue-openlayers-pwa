@@ -4,6 +4,7 @@ import Map from '@/components/Map.vue';
 import PersistButton from '@/components/PersistButton.vue';
 import Reports from '@/components/Reports.vue';
 import TileDownloaderDemo from '@/components/TileDownloaderDemo.vue';
+import SimpleTileDownloader from '@/components/SimpleTileDownloader.vue';
 </script>
 
 <template>
@@ -31,7 +32,12 @@ import TileDownloaderDemo from '@/components/TileDownloaderDemo.vue';
 
       <Reports class="w-full"/>
 
-      <!-- Tile Downloader Demo -->
+      <!-- Simple Tile Downloader (Raw Async Generator Demo) -->
+      <div class="container mx-auto px-4">
+        <SimpleTileDownloader />
+      </div>
+
+      <!-- Tile Downloader Demo (Full-Featured) -->
       <div class="container mx-auto px-4">
         <TileDownloaderDemo />
       </div>

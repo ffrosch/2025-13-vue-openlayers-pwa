@@ -1,0 +1,168 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { createTileRangeCollection, downloadTiles } from '@/services/newTileDownloader';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+
+// State
+const isDownloading = ref(false);
+const totalTiles = ref(0);
+const downloadedTiles = ref(0);
+const failedTiles = ref(0);
+const error = ref<string | null>(null);
+
+// Computed
+const progressPercent = computed(() => {
+  if (totalTiles.value === 0) return 0;
+  return (downloadedTiles.value / totalTiles.value) * 100;
+});
+
+const statusMessage = computed(() => {
+  if (error.value) return `Error: ${error.value}`;
+  if (isDownloading.value) return 'Downloading...';
+  if (downloadedTiles.value > 0) return 'Download complete!';
+  return 'Ready to download';
+});
+
+// Methods
+async function startDownload() {
+  // Reset state
+  isDownloading.value = true;
+  downloadedTiles.value = 0;
+  failedTiles.value = 0;
+  error.value = null;
+
+  try {
+    // Create tile range for a small area (Berlin demo)
+    const config = createTileRangeCollection({
+      sourceName: 'osm-simple-demo',
+      sourceUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      sourceSubdomains: ['a', 'b', 'c'],
+      bbox: [13.3, 52.5, 13.4, 52.55], // Very small area in Berlin
+      minZoom: 12,
+      maxZoom: 14,
+      crs: 'EPSG:3857', // Web Mercator (default for OSM)
+    });
+
+    totalTiles.value = config.totalCount;
+    console.log(`Starting download of ${totalTiles.value} tiles...`);
+
+    // Use the async generator pattern
+    for await (const blob of downloadTiles(config, { maxParallelDownloads: 6 })) {
+      try {
+        downloadedTiles.value++;
+        console.log(`Downloaded tile ${downloadedTiles.value}/${totalTiles.value} (${blob.size} bytes)`);
+      } catch (err) {
+        failedTiles.value++;
+        console.error('Tile download failed:', err);
+      }
+    }
+
+    console.log('Download complete!', {
+      total: totalTiles.value,
+      downloaded: downloadedTiles.value,
+      failed: failedTiles.value
+    });
+
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Download error:', err);
+  } finally {
+    isDownloading.value = false;
+  }
+}
+
+function reset() {
+  totalTiles.value = 0;
+  downloadedTiles.value = 0;
+  failedTiles.value = 0;
+  error.value = null;
+}
+</script>
+
+<template>
+  <Card class="max-w-xl mx-auto">
+    <CardHeader>
+      <CardTitle>Simple Tile Downloader</CardTitle>
+      <CardDescription>
+        Demonstrates the raw async generator pattern from newTileDownloader.ts
+      </CardDescription>
+    </CardHeader>
+    <CardContent class="space-y-4">
+      <!-- Status -->
+      <div class="p-4 bg-muted rounded-lg">
+        <p class="text-sm font-medium mb-2">{{ statusMessage }}</p>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <p class="text-muted-foreground">Total</p>
+            <p class="text-xl font-bold">{{ totalTiles }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground">Downloaded</p>
+            <p class="text-xl font-bold text-green-600">{{ downloadedTiles }}</p>
+          </div>
+          <div>
+            <p class="text-muted-foreground">Failed</p>
+            <p class="text-xl font-bold text-red-600">{{ failedTiles }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div v-if="totalTiles > 0" class="space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium">Progress</span>
+          <span class="font-mono">{{ progressPercent.toFixed(1) }}%</span>
+        </div>
+        <Progress :model-value="progressPercent" />
+      </div>
+
+      <!-- Error Display -->
+      <div
+        v-if="error"
+        class="p-4 bg-red-50 border border-red-200 rounded-lg"
+      >
+        <p class="text-sm text-red-900 font-medium">Error</p>
+        <p class="text-sm text-red-700">{{ error }}</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex gap-2">
+        <Button
+          @click="startDownload"
+          :disabled="isDownloading"
+          class="flex-1"
+        >
+          {{ isDownloading ? 'Downloading...' : 'Start Download' }}
+        </Button>
+        <Button
+          @click="reset"
+          :disabled="isDownloading"
+          variant="outline"
+        >
+          Reset
+        </Button>
+      </div>
+
+      <!-- Info -->
+      <div class="text-xs text-muted-foreground space-y-1 pt-4 border-t">
+        <p>
+          <strong>Note:</strong> This component uses the async generator pattern directly from
+          <code class="px-1 py-0.5 bg-muted rounded">newTileDownloader.ts</code>
+        </p>
+        <p>
+          Downloads tiles for a small area in Berlin (zoom 12-13) without storing them.
+          Check the browser console for detailed logs.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+</template>
+
+<style scoped>
+code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
+}
+</style>

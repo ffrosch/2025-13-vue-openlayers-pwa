@@ -1,9 +1,8 @@
-import OSM from "ol/source/OSM";
-import XYZ from "ol/source/XYZ";
-import { createXYZ, getForProjection } from "ol/tilegrid";
-import { get as getProjection } from "ol/proj";
+import { createXYZ } from "ol/tilegrid";
+import { get as getProjection, transformExtent } from "ol/proj";
 import { containsExtent } from "ol/extent";
 
+/** Must be WGS84 */
 type Bbox = [number, number, number, number];
 
 export interface TileRange {
@@ -18,7 +17,8 @@ export interface TileRange {
 interface TileSourceConfig {
   sourceName: string;
   sourceUrl: string;
-  subdomains: string[];
+  sourceSubdomains: string[];
+  /** Must be WGS84 */
   bbox: Bbox;
   minZoom: number;
   maxZoom: number;
@@ -46,22 +46,24 @@ export function createTileRangeCollection(
     );
   }
 
-  if (targetArea.sourceUrl.includes("{s}") && !targetArea.subdomains) {
+  if (targetArea.sourceUrl.includes("{s}") && !targetArea.sourceSubdomains) {
     throw new Error(
-      `Missing subdomains argument for url ${targetArea.sourceUrl}`
+      `Missing Subdomains argument for url ${targetArea.sourceUrl}`
     );
   }
 
   const tileGrid = createXYZ({
-    extent: targetArea.bbox,
+    extent: getProjection(targetArea.crs)?.getExtent(),
     maxZoom: targetArea.maxZoom,
     minZoom: targetArea.minZoom,
   });
 
+  const bboxInTargetCrs = transformExtent(targetArea.bbox, 'EPSG:4326', targetArea.crs);
+
   const tileRanges: TileRange[] = [];
   for (let zoom = targetArea.minZoom; zoom <= targetArea.maxZoom; zoom++) {
     const { minX, maxX, minY, maxY } = tileGrid.getTileRangeForExtentAndZ(
-      extent,
+      bboxInTargetCrs,
       zoom
     );
     const count = (maxX - minX + 1) * (maxY - minY + 1);
@@ -79,7 +81,7 @@ export function createTileRangeCollection(
     maxZoom: targetArea.maxZoom,
     sourceName: targetArea.sourceName,
     sourceUrl: targetArea.sourceUrl,
-    subdomains: targetArea.subdomains,
+    sourceSubdomains: targetArea.sourceSubdomains,
   };
 }
 
@@ -110,7 +112,7 @@ export async function* downloadTiles(
   tileRangeCollection: TileRangeCollection,
   options: { maxParallelDownloads: number } = { maxParallelDownloads: 6 }
 ): AsyncGenerator<Blob, void, unknown> {
-  const { tileRanges, sourceUrl, subdomains } = tileRangeCollection;
+  const { tileRanges, sourceUrl, sourceSubdomains } = tileRangeCollection;
   const pendingDownloads = new Set<Promise<Blob>>();
 
   function* generateTileURLs() {
@@ -120,13 +122,13 @@ export async function* downloadTiles(
       const { minX, maxX, minY, maxY, zoom } = tileRanges[i] as TileRange;
       for (let x = minX; x <= maxX; x++) {
         for (let y = minY; y <= maxY; y++) {
-          subdomainIndex = (subdomainIndex + 1) % subdomains?.length;
+          subdomainIndex = (subdomainIndex + 1) % sourceSubdomains?.length;
 
           let url = sourceUrl
             .replace("{x}", x.toString())
             .replace("{y}", y.toString())
             .replace("{z}", zoom.toString())
-            .replace("{s}", subdomains[subdomainIndex] ?? "");
+            .replace("{s}", sourceSubdomains[subdomainIndex] ?? "");
 
           yield url;
         }
