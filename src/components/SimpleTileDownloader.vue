@@ -11,6 +11,7 @@ const totalTiles = ref(0);
 const downloadedTiles = ref(0);
 const failedTiles = ref(0);
 const error = ref<string | null>(null);
+const tilesByZoom = ref<Map<number, string[]>>(new Map()); // Map of zoom -> blob URLs
 
 // Computed
 const progressPercent = computed(() => {
@@ -40,7 +41,7 @@ async function startDownload() {
       sourceUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       sourceSubdomains: ['a', 'b', 'c'],
       bbox: [13.3, 52.5, 13.4, 52.55], // Very small area in Berlin
-      minZoom: 12,
+      minZoom: 11,
       maxZoom: 14,
       crs: 'EPSG:3857', // Web Mercator (default for OSM)
     });
@@ -48,11 +49,33 @@ async function startDownload() {
     totalTiles.value = config.totalCount;
     console.log(`Starting download of ${totalTiles.value} tiles...`);
 
+    // Track current zoom level during iteration
+    let currentZoom = config.minZoom;
+    let tilesInCurrentZoom = 0;
+    const tilesPerZoom = config.tileRanges.map(r => r.count);
+
     // Use the async generator pattern
     for await (const blob of downloadTiles(config, { maxParallelDownloads: 6 })) {
       try {
         downloadedTiles.value++;
-        console.log(`Downloaded tile ${downloadedTiles.value}/${totalTiles.value} (${blob.size} bytes)`);
+
+        // Determine zoom level based on tile count
+        while (tilesInCurrentZoom >= tilesPerZoom[currentZoom - config.minZoom] && currentZoom <= config.maxZoom) {
+          currentZoom++;
+          tilesInCurrentZoom = 0;
+        }
+        tilesInCurrentZoom++;
+
+        // Create blob URL for preview
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Add to the correct zoom level
+        if (!tilesByZoom.value.has(currentZoom)) {
+          tilesByZoom.value.set(currentZoom, []);
+        }
+        tilesByZoom.value.get(currentZoom)!.push(blobUrl);
+
+        console.log(`Downloaded tile ${downloadedTiles.value}/${totalTiles.value} (zoom ${currentZoom}, ${blob.size} bytes)`);
       } catch (err) {
         failedTiles.value++;
         console.error('Tile download failed:', err);
@@ -74,6 +97,12 @@ async function startDownload() {
 }
 
 function reset() {
+  // Clean up blob URLs to prevent memory leaks
+  tilesByZoom.value.forEach(urls => {
+    urls.forEach(url => URL.revokeObjectURL(url));
+  });
+  tilesByZoom.value.clear();
+
   totalTiles.value = 0;
   downloadedTiles.value = 0;
   failedTiles.value = 0;
@@ -152,9 +181,39 @@ function reset() {
           <code class="px-1 py-0.5 bg-muted rounded">newTileDownloader.ts</code>
         </p>
         <p>
-          Downloads tiles for a small area in Berlin (zoom 12-13) without storing them.
+          Downloads tiles for a small area in Berlin (zoom 12-14) without storing them.
           Check the browser console for detailed logs.
         </p>
+      </div>
+    </CardContent>
+  </Card>
+
+  <!-- Tile Previews -->
+  <Card v-if="tilesByZoom.size > 0" class="max-w-4xl mx-auto mt-6">
+    <CardHeader>
+      <CardTitle>Downloaded Tiles</CardTitle>
+      <CardDescription>
+        Live preview grouped by zoom level
+      </CardDescription>
+    </CardHeader>
+    <CardContent class="max-h-96 overflow-y-auto">
+      <div
+        v-for="[zoom, urls] in Array.from(tilesByZoom.entries()).sort((a, b) => a[0] - b[0])"
+        :key="zoom"
+        class="mb-6 last:mb-0"
+      >
+        <h3 class="text-sm font-semibold mb-2 sticky top-0 bg-white z-10 py-1">
+          Zoom {{ zoom }} ({{ urls.length }} tiles)
+        </h3>
+        <div class="grid grid-cols-8 gap-1">
+          <img
+            v-for="(url, index) in urls"
+            :key="index"
+            :src="url"
+            :alt="`Tile z${zoom} #${index + 1}`"
+            class="w-full aspect-square object-cover rounded border border-gray-200"
+          />
+        </div>
       </div>
     </CardContent>
   </Card>
