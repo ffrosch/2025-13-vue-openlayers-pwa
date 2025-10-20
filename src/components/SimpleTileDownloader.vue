@@ -12,11 +12,18 @@ const downloadedTiles = ref(0);
 const failedTiles = ref(0);
 const error = ref<string | null>(null);
 const tilesByZoom = ref<Map<number, string[]>>(new Map()); // Map of zoom -> blob URLs
+const totalBytesDownloaded = ref(0);
 
 // Computed
 const progressPercent = computed(() => {
   if (totalTiles.value === 0) return 0;
   return (downloadedTiles.value / totalTiles.value) * 100;
+});
+
+const estimatedTotalSize = computed(() => {
+  if (downloadedTiles.value === 0) return 0;
+  const avgSize = totalBytesDownloaded.value / downloadedTiles.value;
+  return avgSize * totalTiles.value;
 });
 
 const statusMessage = computed(() => {
@@ -25,6 +32,15 @@ const statusMessage = computed(() => {
   if (downloadedTiles.value > 0) return 'Download complete!';
   return 'Ready to download';
 });
+
+// Helpers
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+}
 
 // Methods
 async function startDownload() {
@@ -42,7 +58,7 @@ async function startDownload() {
       sourceSubdomains: ['a', 'b', 'c'],
       bbox: [13.3, 52.5, 13.4, 52.55], // Very small area in Berlin
       minZoom: 11,
-      maxZoom: 14,
+      maxZoom: 16,
       crs: 'EPSG:3857', // Web Mercator (default for OSM)
     });
 
@@ -65,6 +81,9 @@ async function startDownload() {
           tilesInCurrentZoom = 0;
         }
         tilesInCurrentZoom++;
+
+        // Track total bytes
+        totalBytesDownloaded.value += blob.size;
 
         // Create blob URL for preview
         const blobUrl = URL.createObjectURL(blob);
@@ -106,6 +125,7 @@ function reset() {
   totalTiles.value = 0;
   downloadedTiles.value = 0;
   failedTiles.value = 0;
+  totalBytesDownloaded.value = 0;
   error.value = null;
 }
 </script>
@@ -145,6 +165,14 @@ function reset() {
           <span class="font-mono">{{ progressPercent.toFixed(1) }}%</span>
         </div>
         <Progress :model-value="progressPercent" />
+
+        <!-- Size Estimate -->
+        <div class="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Download size</span>
+          <span class="font-mono">
+            {{ formatBytes(totalBytesDownloaded) }} / ~{{ formatBytes(estimatedTotalSize) }}
+          </span>
+        </div>
       </div>
 
       <!-- Error Display -->
