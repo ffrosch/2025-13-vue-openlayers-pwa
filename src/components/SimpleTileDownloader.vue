@@ -58,7 +58,7 @@ async function startDownload() {
       sourceSubdomains: ['a', 'b', 'c'],
       bbox: [13.3, 52.5, 13.4, 52.55], // Very small area in Berlin
       minZoom: 11,
-      maxZoom: 16,
+      maxZoom: 13,
       crs: 'EPSG:3857', // Web Mercator (default for OSM)
     });
 
