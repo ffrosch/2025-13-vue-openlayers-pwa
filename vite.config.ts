@@ -11,6 +11,9 @@ export default defineConfig({
     },
   },
   base: "/2025-13-vue-openlayers-pwa/",
+  worker: {
+    format: "es"
+  },
   plugins: [
     vue(),
     tailwindcss(),
